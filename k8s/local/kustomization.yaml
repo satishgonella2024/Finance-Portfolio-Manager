@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: finance-portfolio-local
+
+bases:
+  - ../base
+
+resources:
+  - namespace.yaml
+
+patches:
+  - target:
+      kind: Service
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: NodePort
+  - target:
+      kind: PersistentVolumeClaim
+      name: postgres-pvc
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 100Mi
+  - target:
+      kind: PersistentVolumeClaim
+      name: redis-pvc
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 100Mi
+  - target:
+      kind: PersistentVolumeClaim
+      name: rabbitmq-pvc
+    patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 100Mi
+
+# For local development, we'll use the images built by docker-compose
+images:
+  - name: finance-portfolio-manager/frontend
+    newName: finance-portfolio-manager-frontend
+    newTag: latest
+  - name: finance-portfolio-manager/auth-service
+    newName: finance-portfolio-manager-auth-service
+    newTag: latest
+  - name: finance-portfolio-manager/portfolio-service
+    newName: finance-portfolio-manager-portfolio-service
+    newTag: latest

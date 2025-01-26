@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: finance-portfolio-dev
+
+bases:
+  - ../../base
+
+resources:
+  - namespace.yaml
+
+patches:
+  - target:
+      kind: Deployment
+      name: frontend
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: finance-portfolio-manager/frontend:dev
+  - target:
+      kind: Deployment
+      name: auth-service
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: finance-portfolio-manager/auth-service:dev
+  - target:
+      kind: Deployment
+      name: portfolio-service
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: finance-portfolio-manager/portfolio-service:dev
