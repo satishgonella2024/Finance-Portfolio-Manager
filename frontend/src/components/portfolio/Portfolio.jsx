@@ -1,33 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../services/api';
 import StockChart from '../StockChart';
 import AlertsButton from '../AlertsButton';
 import ExportButton from '../ExportButton';
 import QuickStats from './QuickStats';
 
 function Portfolio() {
+  const { user } = useAuth();
   const [portfolios, setPortfolios] = useState([]);
   const [newPortfolioName, setNewPortfolioName] = useState('');
   const [newHolding, setNewHolding] = useState({ symbol: '', shares: '', price: '' });
   const [selectedPortfolio, setSelectedPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   useEffect(() => {
-    fetchPortfolios();
-    const interval = setInterval(fetchPortfolios, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (user) {
+      fetchPortfolios();
+      const interval = setInterval(fetchPortfolios, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const fetchPortfolios = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/portfolio');
-      const data = await response.json();
+      setError(null);
+      const data = await api.getPortfolios();
       setPortfolios(data);
     } catch (error) {
       console.error('Error fetching portfolios:', error);
+      setError('Failed to fetch portfolios. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -36,46 +43,56 @@ function Portfolio() {
   const createPortfolio = async (e) => {
     e.preventDefault();
     if (!newPortfolioName.trim()) return;
+    
     try {
-      await fetch('http://localhost:3000/api/portfolio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newPortfolioName })
-      });
+      setError(null);
+      await api.createPortfolio(newPortfolioName);
       setNewPortfolioName('');
-      fetchPortfolios();
+      await fetchPortfolios();
     } catch (error) {
       console.error('Error creating portfolio:', error);
+      setError('Failed to create portfolio. Please try again.');
     }
   };
 
   const addHolding = async (e, portfolioId) => {
     e.preventDefault();
     if (!newHolding.symbol || !newHolding.shares || !newHolding.price) return;
+    
     try {
-      await fetch(`http://localhost:3000/api/portfolio/${portfolioId}/holdings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newHolding)
-      });
+      setError(null);
+      await api.addHolding(portfolioId, newHolding);
       setNewHolding({ symbol: '', shares: '', price: '' });
-      fetchPortfolios();
+      await fetchPortfolios();
     } catch (error) {
       console.error('Error adding holding:', error);
+      setError('Failed to add holding. Please try again.');
     }
   };
 
   const deleteHolding = async (portfolioId, holdingId) => {
     if (!confirm('Are you sure you want to delete this holding?')) return;
+    
     try {
-      await fetch(`http://localhost:3000/api/portfolio/${portfolioId}/holdings/${holdingId}`, {
-        method: 'DELETE'
-      });
-      fetchPortfolios();
+      setError(null);
+      await api.deleteHolding(portfolioId, holdingId);
+      await fetchPortfolios();
     } catch (error) {
       console.error('Error deleting holding:', error);
+      setError('Failed to delete holding. Please try again.');
     }
   };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-medium text-gray-900">Please log in to view your portfolios</h2>
+          <p className="mt-2 text-sm text-gray-600">You need to be logged in to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
   const renderHoldingsTable = (portfolio) => (
     <table className="min-w-full divide-y divide-gray-200">

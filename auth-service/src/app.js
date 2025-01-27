@@ -38,32 +38,26 @@ const initDb = async () => {
 
 initDb();
 
-// Register endpoint
-app.post('/auth/register', async (req, res) => {
+// Register endpoint - removed /auth prefix
+app.post('/register', async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // Check if user exists
     const userExists = await pgPool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
-
     if (userExists.rows.length > 0) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user
     const result = await pgPool.query(
       'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email',
       [email, hashedPassword]
     );
 
-    // Generate JWT
     const token = jwt.sign(
       { userId: result.rows[0].id },
       JWT_SECRET,
@@ -82,30 +76,24 @@ app.post('/auth/register', async (req, res) => {
   }
 });
 
-// Login endpoint
-app.post('/auth/login', async (req, res) => {
+// Login endpoint - removed /auth prefix
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // Find user
     const result = await pgPool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
-
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = result.rows[0];
-
-    // Verify password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { userId: user.id },
       JWT_SECRET,
@@ -127,11 +115,9 @@ app.post('/auth/login', async (req, res) => {
 // Middleware to verify JWT
 export const verifyToken = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
-
   if (!token) {
     return res.status(401).json({ error: 'Access denied' });
   }
-
   try {
     const verified = jwt.verify(token, JWT_SECRET);
     req.user = verified;
@@ -141,18 +127,16 @@ export const verifyToken = (req, res, next) => {
   }
 };
 
-// Protected test route
-app.get('/auth/me', verifyToken, async (req, res) => {
+// Protected test route - removed /auth prefix
+app.get('/me', verifyToken, async (req, res) => {
   try {
     const result = await pgPool.query(
       'SELECT id, email FROM users WHERE id = $1',
       [req.user.userId]
     );
-
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -2,81 +2,60 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+// Log environment variables at load time
+console.log('Auth URL from env:', import.meta.env.VITE_AUTH_URL);
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || '/auth';
+console.log('Final AUTH_URL:', AUTH_URL);
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await fetch('http://localhost:4000/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          localStorage.removeItem('token');
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        localStorage.removeItem('token');
-      }
-    }
-    setLoading(false);
-  };
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:4000/auth/login', {
+      console.log('Attempting login with URL:', `${AUTH_URL}/login`);
+      const response = await fetch(`${AUTH_URL}/login`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
-
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Login failed');
       }
-
-      const { token, user: userData } = await response.json();
-      localStorage.setItem('token', token);
-      setUser(userData);
-      return true;
+      
+      const data = await response.json();
+      setUser(data);
+      localStorage.setItem('token', data.token);
+      return data;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Auth error:', error);
       throw error;
     }
   };
 
   const register = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:4000/auth/register', {
+      console.log('Attempting registration with URL:', `${AUTH_URL}/register`);
+      const response = await fetch(`${AUTH_URL}/register`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password }),
       });
-
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Registration failed');
       }
-
-      const { token, user: userData } = await response.json();
-      localStorage.setItem('token', token);
-      setUser(userData);
-      return true;
+      
+      const data = await response.json();
+      setUser(data);
+      localStorage.setItem('token', data.token);
+      return data;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -84,12 +63,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
     setUser(null);
+    localStorage.removeItem('token');
   };
 
+  // Add useEffect to check environment on mount
+  useEffect(() => {
+    console.log('AuthContext mounted with AUTH_URL:', AUTH_URL);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
