@@ -16,6 +16,11 @@ function App() {
     );
   }
 
+  console.log('Environment variables:', {
+    VITE_AUTH_URL: import.meta.env.VITE_AUTH_URL,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+  });
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50">
