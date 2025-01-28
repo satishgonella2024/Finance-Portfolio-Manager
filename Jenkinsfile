@@ -57,10 +57,10 @@ pipeline {
                     kubectl config use-context ${KUBE_CONTEXT}
                     kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                     
-                    # Update deployment image tags
-                    sed -i 's|image:.*auth-service.*|image: '${DOCKER_REGISTRY}'/auth-service:'${BUILD_NUMBER}'|' base/deployments/auth-service-deployment.yaml
-                    sed -i 's|image:.*portfolio-service.*|image: '${DOCKER_REGISTRY}'/portfolio-service:'${BUILD_NUMBER}'|' base/deployments/portfolio-service-deployment.yaml
-                    sed -i 's|image:.*frontend.*|image: '${DOCKER_REGISTRY}'/frontend:'${BUILD_NUMBER}'|' base/deployments/frontend-deployment.yaml
+                    // # Update deployment image tags
+                    // sed -i 's|image:.*auth-service.*|image: '${DOCKER_REGISTRY}'/auth-service:'${BUILD_NUMBER}'|' base/deployments/auth-service-deployment.yaml
+                    // sed -i 's|image:.*portfolio-service.*|image: '${DOCKER_REGISTRY}'/portfolio-service:'${BUILD_NUMBER}'|' base/deployments/portfolio-service-deployment.yaml
+                    // sed -i 's|image:.*frontend.*|image: '${DOCKER_REGISTRY}'/frontend:'${BUILD_NUMBER}'|' base/deployments/frontend-deployment.yaml
                     
                     # Deploy all resources
                     ./scripts/deploy.sh
