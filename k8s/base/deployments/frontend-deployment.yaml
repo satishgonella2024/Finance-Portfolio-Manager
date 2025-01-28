@@ -18,7 +18,7 @@ spec:
       containers:
       - name: frontend
         image: microservices-demo-frontend:latest
-        imagePullPolicy: always
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
         volumeMounts:
