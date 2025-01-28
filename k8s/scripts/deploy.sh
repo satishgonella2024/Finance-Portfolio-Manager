@@ -71,6 +71,3 @@ echo "📊 Waiting for frontend..."
 kubectl rollout status deployment/frontend -n portfolio-app --timeout=180s
 
 echo "✅ All deployments are ready!"
-echo "🔌 Setting up port forwarding..."
-echo "📱 Access the application at http://localhost:8080"
-kubectl port-forward -n portfolio-app svc/frontend 8080:80
