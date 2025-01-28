@@ -5,6 +5,7 @@ pipeline {
         DOCKER_REGISTRY = '192.168.5.211:5000'
         NAMESPACE = 'portfolio-app'
         GIT_BRANCH = 'main'
+        KUBE_CONTEXT = 'dev-cluster'  // Using Rancher RKE2 cluster
     }
 
     stages {
@@ -14,14 +15,23 @@ pipeline {
             }
         }
 
+        stage('Setup Kubernetes Context') {
+            steps {
+                sh """
+                    kubectl config use-context ${KUBE_CONTEXT}
+                    kubectl config current-context
+                """
+            }
+        }
+
         stage('Build Services') {
             parallel {
                 stage('Build Auth Service') {
                     steps {
                         dir('auth-service/src') {
                             sh """
-                                sudo docker build -t \${DOCKER_REGISTRY}/auth-service:\${BUILD_NUMBER} .
-                                sudo docker tag \${DOCKER_REGISTRY}/auth-service:\${BUILD_NUMBER} \${DOCKER_REGISTRY}/auth-service:latest
+                                docker build -t ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER} .
+                                docker tag ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER} ${DOCKER_REGISTRY}/auth-service:latest
                             """
                         }
                     }
@@ -31,8 +41,8 @@ pipeline {
                     steps {
                         dir('portfolio-service') {
                             sh """
-                                sudo docker build -t \${DOCKER_REGISTRY}/portfolio-service:\${BUILD_NUMBER} .
-                                sudo docker tag \${DOCKER_REGISTRY}/portfolio-service:\${BUILD_NUMBER} \${DOCKER_REGISTRY}/portfolio-service:latest
+                                docker build -t ${DOCKER_REGISTRY}/portfolio-service:${BUILD_NUMBER} .
+                                docker tag ${DOCKER_REGISTRY}/portfolio-service:${BUILD_NUMBER} ${DOCKER_REGISTRY}/portfolio-service:latest
                             """
                         }
                     }
@@ -42,8 +52,8 @@ pipeline {
                     steps {
                         dir('frontend') {
                             sh """
-                                sudo docker build -t \${DOCKER_REGISTRY}/frontend:\${BUILD_NUMBER} .
-                                sudo docker tag \${DOCKER_REGISTRY}/frontend:\${BUILD_NUMBER} \${DOCKER_REGISTRY}/frontend:latest
+                                docker build -t ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER} .
+                                docker tag ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER} ${DOCKER_REGISTRY}/frontend:latest
                             """
                         }
                     }
@@ -54,25 +64,12 @@ pipeline {
         stage('Push Images') {
             steps {
                 sh """
-                    sudo docker push \${DOCKER_REGISTRY}/auth-service:\${BUILD_NUMBER}
-                    sudo docker push \${DOCKER_REGISTRY}/auth-service:latest
-                    sudo docker push \${DOCKER_REGISTRY}/portfolio-service:\${BUILD_NUMBER}
-                    sudo docker push \${DOCKER_REGISTRY}/portfolio-service:latest
-                    sudo docker push \${DOCKER_REGISTRY}/frontend:\${BUILD_NUMBER}
-                    sudo docker push \${DOCKER_REGISTRY}/frontend:latest
-                """
-            }
-        }
-
-        stage('Update Kubernetes Manifests') {
-            steps {
-                sh """
-                    cd k8s
-                    
-                    # Update image tags in deployments
-                    sed -i 's|image:.*auth-service.*|image: '\${DOCKER_REGISTRY}'/auth-service:'\${BUILD_NUMBER}'|' base/deployments/auth-service-deployment.yaml
-                    sed -i 's|image:.*portfolio-service.*|image: '\${DOCKER_REGISTRY}'/portfolio-service:'\${BUILD_NUMBER}'|' base/deployments/portfolio-service-deployment.yaml
-                    sed -i 's|image:.*frontend.*|image: '\${DOCKER_REGISTRY}'/frontend:'\${BUILD_NUMBER}'|' base/deployments/frontend-deployment.yaml
+                    docker push ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER}
+                    docker push ${DOCKER_REGISTRY}/auth-service:latest
+                    docker push ${DOCKER_REGISTRY}/portfolio-service:${BUILD_NUMBER}
+                    docker push ${DOCKER_REGISTRY}/portfolio-service:latest
+                    docker push ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER}
+                    docker push ${DOCKER_REGISTRY}/frontend:latest
                 """
             }
         }
@@ -81,7 +78,12 @@ pipeline {
             steps {
                 sh """
                     cd k8s
-                    chmod +x scripts/deploy.sh
+                    chmod +x scripts/*.sh
+                    
+                    # Create namespace if it doesn't exist
+                    kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                    
+                    # Deploy all resources
                     ./scripts/deploy.sh
                 """
             }
@@ -90,13 +92,19 @@ pipeline {
 
     post {
         failure {
-            sh 'cd k8s && chmod +x scripts/cleanup.sh && ./scripts/cleanup.sh'
+            sh """
+                if [ -d "k8s" ]; then
+                    cd k8s
+                    chmod +x scripts/*.sh
+                    ./scripts/cleanup.sh
+                fi
+            """
         }
         always {
             sh """
-                sudo docker rmi \${DOCKER_REGISTRY}/auth-service:\${BUILD_NUMBER} || true
-                sudo docker rmi \${DOCKER_REGISTRY}/portfolio-service:\${BUILD_NUMBER} || true
-                sudo docker rmi \${DOCKER_REGISTRY}/frontend:\${BUILD_NUMBER} || true
+                docker rmi ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER} || true
+                docker rmi ${DOCKER_REGISTRY}/portfolio-service:${BUILD_NUMBER} || true
+                docker rmi ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER} || true
             """
             cleanWs()
         }
