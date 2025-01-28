@@ -1,0 +1,43 @@
+prometheusOperator:
+  enabled: true
+
+prometheus:
+  enabled: true
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    serviceMonitorSelector:
+      matchLabels:
+        app.kubernetes.io/part-of: portfolio-app
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+  service:
+    type: LoadBalancer
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: default
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
