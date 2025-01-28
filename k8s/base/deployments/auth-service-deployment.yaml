@@ -16,7 +16,7 @@ spec:
       containers:
       - name: auth-service
         image: microservices-demo-auth-service:latest
-        imagePullPolicy: Never
+        imagePullPolicy: always
         ports:
         - containerPort: 4000
         env:
