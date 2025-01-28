@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: portfolio-service
-        image: microservices-demo-portfolio-service:latest
+        image: portfolio-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
