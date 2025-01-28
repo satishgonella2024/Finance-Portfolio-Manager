@@ -19,19 +19,17 @@ pipeline {
             steps {
                 sh """
                     # Build all services using docker-compose
-                    docker-compose build \
-                        --build-arg REGISTRY=${DOCKER_REGISTRY} \
-                        --build-arg TAG=${BUILD_NUMBER}
+                    docker-compose build
                     
-                    # Tag services
-                    docker tag microservices-demo-auth-service ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER}
-                    docker tag microservices-demo-auth-service ${DOCKER_REGISTRY}/auth-service:latest
+                    # Tag services with correct names
+                    docker tag microservices-demo_auth-service ${DOCKER_REGISTRY}/auth-service:${BUILD_NUMBER}
+                    docker tag microservices-demo_auth-service ${DOCKER_REGISTRY}/auth-service:latest
                     
-                    docker tag microservices-demo-portfolio-service ${DOCKER_REGISTRY}/portfolio-service:${BUILD_NUMBER}
-                    docker tag microservices-demo-portfolio-service ${DOCKER_REGISTRY}/portfolio-service:latest
+                    docker tag microservices-demo_portfolio-service ${DOCKER_REGISTRY}/portfolio-service:${BUILD_NUMBER}
+                    docker tag microservices-demo_portfolio-service ${DOCKER_REGISTRY}/portfolio-service:latest
                     
-                    docker tag microservices-demo-frontend ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER}
-                    docker tag microservices-demo-frontend ${DOCKER_REGISTRY}/frontend:latest
+                    docker tag microservices-demo_frontend ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER}
+                    docker tag microservices-demo_frontend ${DOCKER_REGISTRY}/frontend:latest
                 """
             }
         }
@@ -90,9 +88,9 @@ pipeline {
                 docker rmi ${DOCKER_REGISTRY}/portfolio-service:latest || true
                 docker rmi ${DOCKER_REGISTRY}/frontend:${BUILD_NUMBER} || true
                 docker rmi ${DOCKER_REGISTRY}/frontend:latest || true
-                docker rmi microservices-demo-auth-service || true
-                docker rmi microservices-demo-portfolio-service || true
-                docker rmi microservices-demo-frontend || true
+                docker rmi microservices-demo_auth-service || true
+                docker rmi microservices-demo_portfolio-service || true
+                docker rmi microservices-demo_frontend || true
             """
             cleanWs()
         }
