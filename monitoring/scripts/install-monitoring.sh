@@ -16,6 +16,10 @@ helm install prometheus prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
   -f ../base/prometheus-operator/values.yaml
 
-echo "✅ Monitoring stack installed!"
-echo "🔍 Access Grafana at the LoadBalancer IP"
-kubectl get svc -n monitoring prometheus-grafana -w
+# Wait for deployments
+echo "⏳ Waiting for components to be ready..."
+kubectl -n monitoring wait --for=condition=ready pod -l "release=prometheus" --timeout=300s
+
+echo "✅ Monitoring stack installed successfully!"
+echo "🔍 Grafana: http://$(kubectl get svc -n monitoring prometheus-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+echo "🔍 Prometheus: http://$(kubectl get svc -n monitoring prometheus-kube-prometheus-prometheus -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):9090"

@@ -1,0 +1,33 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "PostgreSQL Metrics",
+    "tags": ["postgres"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "title": "Database Size",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "pg_database_size_bytes",
+            "legendFormat": "{{datname}}"
+          }
+        ]
+      },
+      {
+        "title": "Active Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "pg_stat_activity_count",
+            "legendFormat": "active connections"
+          }
+        ]
+      }
+    ]
+  }
+}

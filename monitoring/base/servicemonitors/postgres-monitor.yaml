@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: portfolio-app
+spec:
+  namespaceSelector:
+    matchNames:
+      - portfolio-app
+  selector:
+    matchLabels:
+      app: postgres
+  endpoints:
+  - port: metrics
+    interval: 30s

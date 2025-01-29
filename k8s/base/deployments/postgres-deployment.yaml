@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  namespace: portfolio-app
 spec:
   replicas: 1
   selector:
@@ -13,40 +14,43 @@ spec:
         app: postgres
     spec:
       containers:
-        - name: postgres
-          image: postgres:15-alpine
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_DB
-              value: portfolio_db
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secrets
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secrets
-                  key: POSTGRES_PASSWORD
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
-            - name: init-script
-              mountPath: /docker-entrypoint-initdb.d
-          livenessProbe:
-            exec:
-              command:
-                - pg_isready
-                - -U
-                - postgres
-            initialDelaySeconds: 30
-            periodSeconds: 10
-      volumes:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: portfolio_db
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        volumeMounts:
         - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgres-pvc
+          mountPath: /var/lib/postgresql/data
         - name: init-script
-          configMap:
-            name: db-init-script
+          mountPath: /docker-entrypoint-initdb.d
+      - name: postgres-exporter
+        image: wrouesnel/postgres_exporter:latest
+        ports:
+        - containerPort: 9187
+          name: metrics
+        env:
+        - name: DATA_SOURCE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: DATABASE_URL
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      - name: init-script
+        configMap:
+          name: db-init-script

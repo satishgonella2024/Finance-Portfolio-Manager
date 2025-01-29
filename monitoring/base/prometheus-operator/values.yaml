@@ -1,1 +1,46 @@
-# ... (values content) ...
+prometheusOperator:
+  enabled: true
+
+prometheus:
+  service:
+    type: LoadBalancer
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+grafana:
+  service:
+    type: LoadBalancer
+  persistence:
+    enabled: true
+    size: 5Gi
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: default
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+  # Add default dashboards
+  dashboards:
+    default:
+      k8s-cluster:
+        gnetId: 315
+        revision: 3
+      postgres:
+        gnetId: 9628
+        revision: 1
+
+alertmanager:
+  enabled: true
+  service:
+    type: LoadBalancer
